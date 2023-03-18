@@ -1,44 +1,39 @@
 package org.example;
 
 import java.io.*;
+import java.util.stream.Stream;
 
 public class GameOfLife {
+    String X = "X";
+    String O = "O";
+    int sizeY;
+    int sizeX;
+    String[][] initial;
+    int iterations;
+    String folder = "src/test/resources/";
+
     public void game(String input, String output) {
-            String folder = "src/test/resources/";
-            int iterations;
-            int sizeY;
-            int sizeX;
-            String[][] initial;
-            String[][] generation;
-            String X = "X";
-            String O = "O";
-            StringBuilder result = new StringBuilder();
+        StringBuilder result;
 
-        try (BufferedReader br = new BufferedReader(new FileReader(folder + input))) {
-            String s;
-            s = br.readLine();
-            String[] data = s.split(",", 3);
-            iterations = Integer.parseInt(data[2]);
-            sizeX = Integer.parseInt(data[1]);
-            sizeY = Integer.parseInt(data[0]);
+        readFile(input);
+        result = generate(initial, iterations);
 
-            initial = new String[sizeY][sizeX];
-
-            int i = 0;
-            while ((s = br.readLine()) != null) {
-                data = s.split(" ", sizeX);
-                System.arraycopy(data, 0, initial[i], 0, sizeX);
-                i++;
-            }
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(folder + output))) {
+            writer.write(result.toString());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
 
+    private StringBuilder generate(String[][] initial, int iterations) {
+        StringBuilder result = new StringBuilder();
+        String[][] generation;
+        int sizeY = initial.length;
+        int sizeX =initial[0].length;
         while (iterations > 0) {
             generation = new String[sizeY][sizeX];
             for (int y = 0; y < sizeY; y++) {
                 for (int x = 0; x < sizeX; x++) {
-                    int neighbours = 0;
 
                     int x1 = x + 1;
                     int x_1 = x - 1;
@@ -57,31 +52,16 @@ public class GameOfLife {
                     if ((y+1) == sizeY) {
                         y1 = 0;
                     }
-
-                    if(initial[y][x1].equals(X)) {
-                        neighbours++;
-                    }
-                    if(initial[y1][x1].equals(X)) {
-                        neighbours++;
-                    }
-                    if(initial[y1][x].equals(X)) {
-                        neighbours++;
-                    }
-                    if(initial[y1][x_1].equals(X)) {
-                        neighbours++;
-                    }
-                    if(initial[y][x_1].equals(X)) {
-                        neighbours++;
-                    }
-                    if(initial[y_1][x_1].equals(X)) {
-                        neighbours++;
-                    }
-                    if(initial[y_1][x].equals(X)) {
-                        neighbours++;
-                    }
-                    if(initial[y_1][x1].equals(X)) {
-                        neighbours++;
-                    }
+                    Stream<String> stream = Stream.of(
+                            initial[y][x1],
+                            initial[y1][x1],
+                            initial[y1][x],
+                            initial[y1][x_1],
+                            initial[y][x_1],
+                            initial[y_1][x_1],
+                            initial[y_1][x],
+                            initial[y_1][x1]);
+                    int neighbours = (int) stream.filter(el -> el.equals(X)).count();
 
                     if (initial[y][x].equals(X)) {
                         if (neighbours == 2 || neighbours == 3) {
@@ -92,21 +72,39 @@ public class GameOfLife {
                     } else generation[y][x] = O;
                 }
             }
-                initial = generation;
-                iterations--;
+            initial = generation;
+            iterations--;
+        }
+        for (String[] strings : initial) {
+            if (!result.toString().equals("")) {
+                result.append("\n");
             }
-            for (int y = 0; y < sizeY; y++) {
-                if (!result.toString().equals("")) {
-                    result.append("\n");
-                }
-                for (int x = 0; x < sizeX; x++) {
-                    result.append(initial[y][x]).append(" ");
-                }
-                result = new StringBuilder(result.substring(0, result.length() - 1));
+            for (int x = 0; x < sizeX; x++) {
+                result.append(strings[x]).append(" ");
             }
+            result = new StringBuilder(result.substring(0, result.length() - 1));
+        }
+        return result;
+    }
 
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(folder + output))) {
-            writer.write(result.toString());
+    private void readFile(String input) {
+
+        try (BufferedReader br = new BufferedReader(new FileReader(folder + input))) {
+            String s;
+            s = br.readLine();
+            String[] data = s.split(",", 3);
+            iterations = Integer.parseInt(data[2]);
+            sizeX = Integer.parseInt(data[1]);
+            sizeY = Integer.parseInt(data[0]);
+
+            initial = new String[sizeY][sizeX];
+
+            int i = 0;
+            while ((s = br.readLine()) != null) {
+                data = s.split(" ", sizeX);
+                System.arraycopy(data, 0, initial[i], 0, sizeX);
+                i++;
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
